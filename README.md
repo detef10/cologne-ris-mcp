@@ -102,11 +102,68 @@ async with streamablehttp_client("http://localhost:8766/mcp") as (r, w, _):
 The chat interface (`chat_app.py`) provides a natural language way to query the council information system.
 
 **Supported LLM Providers:**
-- **Anthropic Claude** (recommended)
-- **OpenAI** / OpenAI-compatible APIs
-- **Ollama** (local models)
 
-Enter your API key in the chat UI settings. Keys are not stored on the server.
+| Provider | Cost | API Key Required | Notes |
+|----------|------|------------------|-------|
+| Anthropic Claude | Paid | Yes | Best quality, recommended |
+| OpenAI | Paid | Yes | GPT-4, GPT-3.5 |
+| **Ollama** | **Free** | **No** | Runs locally on your machine |
+| Custom | Varies | Yes | Any OpenAI-compatible API |
+
+### Using Ollama (Free Local LLM)
+
+[Ollama](https://ollama.ai) lets you run large language models locally for free.
+
+**1. Install Ollama:**
+
+```bash
+# macOS
+brew install ollama
+
+# Linux
+curl -fsSL https://ollama.ai/install.sh | sh
+
+# Windows: Download from https://ollama.ai/download
+```
+
+**2. Download a model:**
+
+```bash
+# Recommended models for tool use:
+ollama pull llama3.1        # 8B params, good balance
+ollama pull llama3.1:70b    # 70B params, better quality (needs 40GB+ RAM)
+ollama pull mistral         # 7B params, fast
+ollama pull mixtral         # 8x7B MoE, very capable
+ollama pull qwen2.5         # Good for multilingual (German)
+ollama pull command-r       # Optimized for tool use
+```
+
+**3. Start Ollama:**
+
+```bash
+ollama serve
+# Runs on http://localhost:11434
+```
+
+**4. Configure in Chat UI:**
+
+- Select **"Ollama"** as provider
+- Leave API key empty (not required)
+- Base URL: `http://localhost:11434/v1` (default)
+- Enter model name (e.g., `llama3.1`, `mistral`)
+
+**Recommended Ollama Models:**
+
+| Model | Size | RAM Required | Quality | Speed |
+|-------|------|--------------|---------|-------|
+| `llama3.1` | 8B | 8GB | Good | Fast |
+| `llama3.1:70b` | 70B | 40GB+ | Excellent | Slow |
+| `mistral` | 7B | 8GB | Good | Fast |
+| `mixtral` | 8x7B | 32GB | Very Good | Medium |
+| `qwen2.5` | 7B | 8GB | Good | Fast |
+| `command-r` | 35B | 20GB | Very Good (tool use) | Medium |
+
+> **Note:** Smaller models may struggle with complex tool use. For best results with the RIS tools, use `llama3.1:70b`, `mixtral`, or `command-r` if your hardware supports it.
 
 ## Tag Database (Optional)
 
