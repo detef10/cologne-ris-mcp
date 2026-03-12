@@ -1,0 +1,32 @@
+# Virtual environment
+venv/
+.venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Logs
+*.log
+
+# Database (generated - can be rebuilt with indexer.py)
+*.db
+
+# Environment variables
+.env
+.env.local
+
+# Temp files
+~$*
+*.tmp

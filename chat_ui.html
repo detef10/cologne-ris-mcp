@@ -1,0 +1,1665 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cologne RIS Chat</title>
+<style>
+:root {
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --bg-tertiary: #334155;
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --accent: #38bdf8;
+  --accent-hover: #0ea5e9;
+  --success: #4ade80;
+  --error: #f87171;
+  --warning: #fbbf24;
+  --border: #475569;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  padding: 1rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header h1 {
+  font-size: 1.25rem;
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.header-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.icon-btn {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.5rem;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+  transition: all 0.2s;
+}
+
+.icon-btn:hover {
+  background: var(--border);
+  color: var(--text-primary);
+}
+
+.chat-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  max-width: 900px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.message {
+  display: flex;
+  gap: 0.75rem;
+  max-width: 85%;
+}
+
+.message.user {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+
+.message-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--bg-tertiary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.message.user .message-avatar {
+  background: var(--accent);
+}
+
+.message-content {
+  background: var(--bg-secondary);
+  border-radius: 12px;
+  padding: 0.875rem 1rem;
+  border: 1px solid var(--border);
+}
+
+.message.user .message-content {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #0f172a;
+}
+
+.message-content p { margin-bottom: 0.5rem; }
+.message-content p:last-child { margin-bottom: 0; }
+.message-content ul, .message-content ol { margin: 0.5rem 0 0.5rem 1.5rem; }
+.message-content li { margin-bottom: 0.25rem; }
+.message-content a { color: var(--accent); text-decoration: underline; }
+.message.user .message-content a { color: #0f172a; }
+.message-content code { background: var(--bg-primary); padding: 0.1rem 0.3rem; border-radius: 4px; font-size: 0.85em; }
+.message-content pre { background: var(--bg-primary); padding: 0.75rem; border-radius: 6px; overflow-x: auto; margin: 0.5rem 0; }
+.message-content pre code { background: none; padding: 0; }
+
+.tool-badge {
+  display: inline-block;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  margin-right: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.sources {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.85rem;
+}
+
+.sources-title {
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  margin-bottom: 0.25rem;
+}
+
+.sources a {
+  display: block;
+  color: var(--accent);
+  text-decoration: none;
+  padding: 0.15rem 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sources a:hover { text-decoration: underline; }
+
+.typing {
+  display: flex;
+  gap: 0.3rem;
+  padding: 0.5rem;
+}
+
+.typing span {
+  width: 8px;
+  height: 8px;
+  background: var(--text-secondary);
+  border-radius: 50%;
+  animation: bounce 1.4s infinite ease-in-out both;
+}
+
+.typing span:nth-child(1) { animation-delay: -0.32s; }
+.typing span:nth-child(2) { animation-delay: -0.16s; }
+
+@keyframes bounce {
+  0%, 80%, 100% { transform: scale(0); }
+  40% { transform: scale(1); }
+}
+
+.input-area {
+  padding: 1rem 0;
+  border-top: 1px solid var(--border);
+}
+
+.input-wrapper {
+  display: flex;
+  gap: 0.75rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0.5rem;
+}
+
+.input-wrapper:focus-within {
+  border-color: var(--accent);
+}
+
+#message-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-size: 1rem;
+  padding: 0.5rem;
+  resize: none;
+  min-height: 24px;
+  max-height: 150px;
+  font-family: inherit;
+}
+
+#message-input:focus { outline: none; }
+#message-input::placeholder { color: var(--text-secondary); }
+
+.send-btn {
+  background: var(--accent);
+  border: none;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  color: #0f172a;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  align-self: flex-end;
+}
+
+.send-btn:hover { background: var(--accent-hover); }
+.send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.quick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.quick-btn {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 0.4rem 0.875rem;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.quick-btn:hover {
+  background: var(--border);
+  color: var(--text-primary);
+  border-color: var(--accent);
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s;
+}
+
+.modal-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.modal {
+  background: var(--bg-secondary);
+  border-radius: 16px;
+  padding: 1.5rem;
+  width: 90%;
+  max-width: 450px;
+  border: 1px solid var(--border);
+}
+
+.modal h2 {
+  margin-bottom: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  margin-bottom: 0.4rem;
+}
+
+.form-group select,
+.form-group input {
+  width: 100%;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.6rem 0.75rem;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+}
+
+.form-group select:focus,
+.form-group input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.form-group small {
+  display: block;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.form-group .hint {
+  background: var(--bg-tertiary);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.form-group .hint a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.form-group .hint a:hover {
+  text-decoration: underline;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.modal-btn {
+  flex: 1;
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.modal-btn.primary {
+  background: var(--accent);
+  border: none;
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.modal-btn.primary:hover { background: var(--accent-hover); }
+
+.modal-btn.secondary {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+}
+
+.modal-btn.secondary:hover { background: var(--bg-tertiary); }
+
+.test-result {
+  margin-top: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+}
+
+.test-result.success { background: rgba(74, 222, 128, 0.15); color: var(--success); }
+.test-result.error { background: rgba(248, 113, 113, 0.15); color: var(--error); }
+.test-result.warning { background: rgba(251, 191, 36, 0.15); color: var(--warning); }
+
+.welcome {
+  text-align: center;
+  padding: 2rem;
+  max-width: 600px;
+  margin: auto;
+}
+
+.welcome h2 {
+  font-size: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.welcome p {
+  color: var(--text-secondary);
+  margin-bottom: 1.5rem;
+}
+
+.welcome-features {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  text-align: left;
+  margin-bottom: 1.5rem;
+}
+
+.feature {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem;
+}
+
+.feature-icon {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.feature h3 {
+  font-size: 0.95rem;
+  margin-bottom: 0.25rem;
+}
+
+.feature p {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.provider-badge {
+  display: inline-block;
+  background: var(--success);
+  color: #0f172a;
+  font-size: 0.65rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  margin-left: 0.5rem;
+  font-weight: 600;
+}
+
+/* Search Mode Toggle */
+.search-toggle {
+  display: flex;
+  background: var(--bg-tertiary);
+  border-radius: 8px;
+  padding: 3px;
+  gap: 3px;
+}
+
+.search-toggle-btn {
+  background: transparent;
+  border: none;
+  padding: 0.4rem 0.75rem;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.search-toggle-btn.active {
+  background: var(--accent);
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.search-toggle-btn:hover:not(.active) {
+  color: var(--text-primary);
+}
+
+/* Tag Filter Panel */
+.tag-filter-panel {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  display: none;
+}
+
+.tag-filter-panel.active {
+  display: block;
+}
+
+.tag-filter-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.tag-filter-header h3 {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.tag-filter-clear {
+  background: transparent;
+  border: none;
+  color: var(--accent);
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.tag-filter-clear:hover {
+  text-decoration: underline;
+}
+
+.tag-category {
+  margin-bottom: 0.75rem;
+}
+
+.tag-category:last-child {
+  margin-bottom: 0;
+}
+
+.tag-category-title {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.4rem;
+  text-transform: uppercase;
+}
+
+.tag-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.tag-chip {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 0.25rem 0.6rem;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tag-chip:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+.tag-chip.selected {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #0f172a;
+}
+
+.tag-chip .count {
+  opacity: 0.7;
+  margin-left: 0.25rem;
+}
+
+/* Fast Search Results */
+.fast-results {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.fast-result-item {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.875rem 1rem;
+  transition: border-color 0.2s;
+}
+
+.fast-result-item:hover {
+  border-color: var(--accent);
+}
+
+.fast-result-title {
+  font-weight: 500;
+  margin-bottom: 0.35rem;
+}
+
+.fast-result-title a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.fast-result-title a:hover {
+  text-decoration: underline;
+}
+
+.fast-result-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.fast-result-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-top: 0.5rem;
+}
+
+.fast-result-tag {
+  background: var(--bg-tertiary);
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+}
+
+.search-stats {
+  background: var(--bg-tertiary);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.search-stats .count {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* Index Info Panel */
+.index-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.8rem;
+}
+
+.index-stats {
+  color: var(--text-secondary);
+}
+
+.index-stats #index-count {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.index-date {
+  margin-left: 0.5rem;
+  opacity: 0.7;
+}
+
+.index-btn {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.35rem 0.6rem;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.index-btn:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+.index-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.index-progress {
+  margin-top: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--bg-tertiary);
+  border-radius: 6px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.progress-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.llm-badge {
+  display: inline-block;
+  background: var(--success);
+  color: #0f172a;
+  font-size: 0.6rem;
+  padding: 0.1rem 0.3rem;
+  border-radius: 3px;
+  margin-left: 0.25rem;
+  font-weight: 600;
+}
+
+@media (max-width: 600px) {
+  .welcome-features { grid-template-columns: 1fr; }
+  .message { max-width: 95%; }
+}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <h1>Cologne RIS Chat</h1>
+  <div class="header-actions">
+    <div class="search-toggle">
+      <button class="search-toggle-btn active" id="fast-search-btn" title="Schnellsuche in Tag-Datenbank">
+        &#x26A1; Schnell
+      </button>
+      <button class="search-toggle-btn" id="full-search-btn" title="Vollsuche mit KI">
+        &#x1F50D; Voll
+      </button>
+    </div>
+    <button class="icon-btn" id="clear-btn" title="Clear chat">&#x1F5D1;</button>
+    <button class="icon-btn" id="settings-btn" title="Settings">&#x2699;</button>
+  </div>
+</header>
+
+<main class="chat-container">
+  <div class="messages" id="messages">
+    <div class="welcome" id="welcome">
+      <h2>Willkommen! / Welcome!</h2>
+      <p>Ask questions about Cologne's city council in German or English.</p>
+      <div class="welcome-features">
+        <div class="feature">
+          <div class="feature-icon">&#x1F4CB;</div>
+          <h3>Vorlagen</h3>
+          <p>Search proposals and motions</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">&#x1F3DB;</div>
+          <h3>Gremien</h3>
+          <p>Explore committees and councils</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">&#x1F4C5;</div>
+          <h3>Sitzungen</h3>
+          <p>Find meetings and agendas</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">&#x1F4DC;</div>
+          <h3>Historie</h3>
+          <p>Data back to 2004</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tag Filter Panel for Fast Search -->
+  <div class="tag-filter-panel active" id="tag-filter-panel">
+    <div class="tag-filter-header">
+      <h3>&#x1F3F7; Filter nach Tags</h3>
+      <button class="tag-filter-clear" id="clear-tags-btn">Zurücksetzen</button>
+    </div>
+    <div id="tag-categories">
+      <!-- Tags werden dynamisch geladen -->
+      <div style="color: var(--text-secondary); font-size: 0.85rem;">Lade Tags...</div>
+    </div>
+    <div class="index-info" id="index-info">
+      <div class="index-stats">
+        <span id="index-count">--</span> Beschlüsse indexiert
+        <span class="index-date" id="index-date"></span>
+      </div>
+      <button class="index-btn" id="index-btn" title="Neue Beschlüsse indexieren">
+        &#x1F504; Aktualisieren
+      </button>
+    </div>
+    <div class="index-progress" id="index-progress" style="display: none;">
+      <span class="progress-spinner"></span>
+      <span id="index-progress-text">Indexiere...</span>
+    </div>
+  </div>
+
+  <div class="input-area">
+    <div class="input-wrapper">
+      <textarea id="message-input" placeholder="Suchbegriff eingeben... / Enter search term..." rows="1"></textarea>
+      <button class="send-btn" id="send-btn">Suchen</button>
+    </div>
+    <div class="quick-actions" id="quick-actions">
+      <button class="quick-btn" data-q="Radweg">&#x1F6B2; Radweg</button>
+      <button class="quick-btn" data-q="Schule">&#x1F3EB; Schule</button>
+      <button class="quick-btn" data-q="Klimaschutz">&#x1F331; Klimaschutz</button>
+      <button class="quick-btn" data-q="Wohnen">&#x1F3E0; Wohnen</button>
+    </div>
+    <div class="quick-actions" id="quick-actions-full" style="display: none;">
+      <button class="quick-btn" data-q="Zeig mir die letzten Beschluesse zum Thema Klima">Klimabeschlüsse</button>
+      <button class="quick-btn" data-q="Wann sind die naechsten Ratssitzungen?">Ratssitzungen</button>
+      <button class="quick-btn" data-q="Welche Bezirksvertretungen gibt es?">Bezirksvertretungen</button>
+      <button class="quick-btn" data-q="What decisions were made about traffic in 2023?">Traffic 2023</button>
+    </div>
+  </div>
+</main>
+
+<div class="modal-overlay" id="settings-modal">
+  <div class="modal">
+    <h2>Einstellungen / Settings</h2>
+    <div class="form-group">
+      <label for="provider">Provider</label>
+      <select id="provider">
+        <option value="ollama">Ollama (Local - Free)</option>
+        <option value="anthropic">Anthropic (Claude)</option>
+        <option value="openai">OpenAI (GPT-4)</option>
+        <option value="custom">Custom OpenAI-compatible</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label for="model">Model</label>
+      <select id="model"></select>
+    </div>
+    <div class="form-group" id="api-key-group">
+      <label for="api-key">API Key</label>
+      <input type="password" id="api-key" placeholder="sk-...">
+      <small>Your key is stored locally in your browser.</small>
+    </div>
+    <div class="form-group" id="base-url-group" style="display:none;">
+      <label for="base-url">Custom Endpoint URL</label>
+      <input type="text" id="base-url" placeholder="https://api.example.com/v1">
+    </div>
+    <div class="form-group" id="ollama-hint" style="display:block;">
+      <div class="hint">
+        <strong>Ollama runs locally - no API key needed!</strong><br>
+        Install from <a href="https://ollama.ai" target="_blank">ollama.ai</a>, then run:<br>
+        <code>ollama pull llama3.2</code>
+      </div>
+    </div>
+    <div id="test-result"></div>
+    <div class="modal-actions">
+      <button class="modal-btn secondary" id="test-btn">Test Connection</button>
+      <button class="modal-btn primary" id="save-btn">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  var state = {
+    messages: [],
+    settings: {
+      provider: 'ollama',
+      model: 'qwen2.5:7b',
+      apiKey: '',
+      baseUrl: ''
+    },
+    ollamaModels: [],
+    searchMode: 'fast', // 'fast' or 'full'
+    selectedTags: [],
+    availableTags: {}
+  };
+
+  var modelOptions = {
+    ollama: [
+      { value: 'qwen2.5:7b', label: 'Qwen 2.5 (7B) - Recommended' },
+      { value: 'llama3.1:8b', label: 'Llama 3.1 (8B)' },
+      { value: 'llama3.2', label: 'Llama 3.2 (3B)' },
+      { value: 'qwen2.5', label: 'Qwen 2.5' },
+      { value: 'mistral', label: 'Mistral' },
+      { value: 'mixtral', label: 'Mixtral' },
+      { value: 'gemma2', label: 'Gemma 2' },
+      { value: 'phi3', label: 'Phi-3' }
+    ],
+    anthropic: [
+      { value: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4' },
+      { value: 'claude-3-5-haiku-20241022', label: 'Claude 3.5 Haiku' },
+      { value: 'claude-opus-4-20250514', label: 'Claude Opus 4' }
+    ],
+    openai: [
+      { value: 'gpt-4o', label: 'GPT-4o' },
+      { value: 'gpt-4o-mini', label: 'GPT-4o Mini' },
+      { value: 'gpt-4-turbo', label: 'GPT-4 Turbo' }
+    ],
+    custom: [
+      { value: 'custom', label: 'Custom Model' }
+    ]
+  };
+
+  var messagesEl = document.getElementById('messages');
+  var welcomeEl = document.getElementById('welcome');
+  var inputEl = document.getElementById('message-input');
+  var sendBtn = document.getElementById('send-btn');
+  var settingsBtn = document.getElementById('settings-btn');
+  var clearBtn = document.getElementById('clear-btn');
+  var settingsModal = document.getElementById('settings-modal');
+  var providerSelect = document.getElementById('provider');
+  var modelSelect = document.getElementById('model');
+  var apiKeyInput = document.getElementById('api-key');
+  var apiKeyGroup = document.getElementById('api-key-group');
+  var baseUrlInput = document.getElementById('base-url');
+  var baseUrlGroup = document.getElementById('base-url-group');
+  var ollamaHint = document.getElementById('ollama-hint');
+  var testBtn = document.getElementById('test-btn');
+  var saveBtn = document.getElementById('save-btn');
+  var testResult = document.getElementById('test-result');
+
+  // Search mode elements
+  var fastSearchBtn = document.getElementById('fast-search-btn');
+  var fullSearchBtn = document.getElementById('full-search-btn');
+  var tagFilterPanel = document.getElementById('tag-filter-panel');
+  var tagCategoriesEl = document.getElementById('tag-categories');
+  var clearTagsBtn = document.getElementById('clear-tags-btn');
+  var quickActions = document.getElementById('quick-actions');
+  var quickActionsFull = document.getElementById('quick-actions-full');
+
+  // Index info elements
+  var indexInfo = document.getElementById('index-info');
+  var indexCount = document.getElementById('index-count');
+  var indexDate = document.getElementById('index-date');
+  var indexBtn = document.getElementById('index-btn');
+  var indexProgress = document.getElementById('index-progress');
+  var indexProgressText = document.getElementById('index-progress-text');
+
+  function init() {
+    loadSettings();
+    updateProviderUI();
+    checkOllama();
+    loadTags();
+
+    sendBtn.addEventListener('click', sendMessage);
+    inputEl.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+    inputEl.addEventListener('input', autoResize);
+
+    settingsBtn.addEventListener('click', function() {
+      settingsModal.classList.add('active');
+      checkOllama();
+    });
+    settingsModal.addEventListener('click', function(e) {
+      if (e.target === settingsModal) settingsModal.classList.remove('active');
+    });
+
+    clearBtn.addEventListener('click', clearChat);
+
+    providerSelect.addEventListener('change', function() {
+      updateProviderUI();
+    });
+
+    testBtn.addEventListener('click', testConnection);
+    saveBtn.addEventListener('click', saveSettings);
+
+    // Search mode toggle
+    fastSearchBtn.addEventListener('click', function() {
+      setSearchMode('fast');
+    });
+    fullSearchBtn.addEventListener('click', function() {
+      setSearchMode('full');
+    });
+
+    // Clear tags
+    clearTagsBtn.addEventListener('click', function() {
+      state.selectedTags = [];
+      updateTagUI();
+    });
+
+    // Index button
+    indexBtn.addEventListener('click', triggerIndexing);
+
+    // Quick action buttons
+    document.querySelectorAll('.quick-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        inputEl.value = btn.dataset.q;
+        sendMessage();
+      });
+    });
+
+    // Show settings on first visit only if in full mode and no API key
+    setTimeout(function() {
+      if (state.searchMode === 'full' && state.settings.provider !== 'ollama' && !state.settings.apiKey) {
+        settingsModal.classList.add('active');
+      }
+    }, 500);
+  }
+
+  function loadSettings() {
+    var saved = localStorage.getItem('cologne-ris-chat-settings');
+    if (saved) {
+      try {
+        var parsed = JSON.parse(saved);
+        state.settings.provider = parsed.provider || 'ollama';
+        state.settings.model = parsed.model || 'qwen2.5:7b';
+        state.settings.apiKey = parsed.apiKey || '';
+        state.settings.baseUrl = parsed.baseUrl || '';
+      } catch (e) {}
+      providerSelect.value = state.settings.provider;
+      apiKeyInput.value = state.settings.apiKey;
+      baseUrlInput.value = state.settings.baseUrl;
+    }
+  }
+
+  function saveSettings() {
+    state.settings.provider = providerSelect.value;
+    state.settings.model = modelSelect.value;
+    state.settings.apiKey = apiKeyInput.value;
+    state.settings.baseUrl = baseUrlInput.value;
+    localStorage.setItem('cologne-ris-chat-settings', JSON.stringify(state.settings));
+    settingsModal.classList.remove('active');
+    testResult.textContent = '';
+  }
+
+  function updateProviderUI() {
+    var provider = providerSelect.value;
+    
+    // Show/hide API key field
+    if (provider === 'ollama') {
+      apiKeyGroup.style.display = 'none';
+      ollamaHint.style.display = 'block';
+      baseUrlGroup.style.display = 'none';
+    } else if (provider === 'custom') {
+      apiKeyGroup.style.display = 'block';
+      ollamaHint.style.display = 'none';
+      baseUrlGroup.style.display = 'block';
+    } else {
+      apiKeyGroup.style.display = 'block';
+      ollamaHint.style.display = 'none';
+      baseUrlGroup.style.display = 'none';
+    }
+    
+    updateModelOptions();
+  }
+
+  function updateModelOptions() {
+    var provider = providerSelect.value;
+    var options;
+    
+    if (provider === 'ollama' && state.ollamaModels.length > 0) {
+      // Use detected Ollama models
+      options = state.ollamaModels.map(function(m) {
+        return { value: m, label: m };
+      });
+    } else {
+      options = modelOptions[provider] || modelOptions.ollama;
+    }
+    
+    while (modelSelect.firstChild) {
+      modelSelect.removeChild(modelSelect.firstChild);
+    }
+    options.forEach(function(opt) {
+      var option = document.createElement('option');
+      option.value = opt.value;
+      option.textContent = opt.label;
+      modelSelect.appendChild(option);
+    });
+
+    if (state.settings.provider === provider) {
+      modelSelect.value = state.settings.model;
+    }
+  }
+
+  function checkOllama() {
+    fetch('/health')
+      .then(function(response) { return response.json(); })
+      .then(function(data) {
+        if (data.ollama === 'ok' && data.ollama_models && data.ollama_models.length > 0) {
+          state.ollamaModels = data.ollama_models;
+          if (providerSelect.value === 'ollama') {
+            updateModelOptions();
+          }
+        }
+      })
+      .catch(function() {});
+  }
+
+  function testConnection() {
+    testResult.className = 'test-result';
+    testResult.textContent = 'Testing...';
+
+    fetch('/health')
+      .then(function(response) { return response.json(); })
+      .then(function(data) {
+        var messages = [];
+        var hasError = false;
+        var hasWarning = false;
+        
+        if (data.mcp_server === 'ok') {
+          messages.push('MCP server: OK');
+        } else {
+          messages.push('MCP server: Not reachable (run ./start.sh first)');
+          hasError = true;
+        }
+        
+        var provider = providerSelect.value;
+        if (provider === 'ollama') {
+          if (data.ollama === 'ok') {
+            messages.push('Ollama: OK (' + data.ollama_models.length + ' models)');
+            state.ollamaModels = data.ollama_models;
+            updateModelOptions();
+          } else {
+            messages.push('Ollama: Not running (install from ollama.ai)');
+            hasWarning = true;
+          }
+        }
+        
+        testResult.textContent = messages.join(' | ');
+        if (hasError) {
+          testResult.className = 'test-result error';
+        } else if (hasWarning) {
+          testResult.className = 'test-result warning';
+        } else {
+          testResult.className = 'test-result success';
+        }
+      })
+      .catch(function(e) {
+        testResult.className = 'test-result error';
+        testResult.textContent = 'Connection failed: ' + e.message;
+      });
+  }
+
+  function autoResize() {
+    inputEl.style.height = 'auto';
+    inputEl.style.height = Math.min(inputEl.scrollHeight, 150) + 'px';
+  }
+
+  function setSearchMode(mode) {
+    state.searchMode = mode;
+
+    if (mode === 'fast') {
+      fastSearchBtn.classList.add('active');
+      fullSearchBtn.classList.remove('active');
+      tagFilterPanel.classList.add('active');
+      quickActions.style.display = 'flex';
+      quickActionsFull.style.display = 'none';
+      inputEl.placeholder = 'Suchbegriff eingeben... / Enter search term...';
+      sendBtn.textContent = 'Suchen';
+    } else {
+      fastSearchBtn.classList.remove('active');
+      fullSearchBtn.classList.add('active');
+      tagFilterPanel.classList.remove('active');
+      quickActions.style.display = 'none';
+      quickActionsFull.style.display = 'flex';
+      inputEl.placeholder = 'Frag mich etwas... / Ask me something...';
+      sendBtn.textContent = 'Senden';
+    }
+  }
+
+  function loadTags() {
+    fetch('/search/tags')
+      .then(function(response) {
+        if (!response.ok) throw new Error('Tags not available');
+        return response.json();
+      })
+      .then(function(data) {
+        state.availableTags = data;
+        renderTags();
+        loadIndexStats();
+      })
+      .catch(function(e) {
+        tagCategoriesEl.innerHTML = '<div style="color: var(--warning); font-size: 0.85rem;">' +
+          '⚠️ Tag-Datenbank nicht initialisiert.<br>' +
+          '<small>Führe aus: python indexer.py --all</small></div>';
+        indexInfo.style.display = 'none';
+      });
+  }
+
+  function loadIndexStats() {
+    fetch('/search/stats')
+      .then(function(response) { return response.json(); })
+      .then(function(data) {
+        if (data.total_beschluesse) {
+          indexCount.textContent = data.total_beschluesse;
+
+          if (data.last_indexed) {
+            var date = new Date(data.last_indexed);
+            var formatted = date.toLocaleDateString('de-DE', {
+              day: '2-digit',
+              month: '2-digit',
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit'
+            });
+            indexDate.textContent = '(Stand: ' + formatted + ')';
+          }
+
+          // Show LLM badge if any entries were tagged with LLM
+          if (data.llm_tagged && data.llm_tagged > 0) {
+            indexCount.innerHTML = data.total_beschluesse +
+              ' <span class="llm-badge">' + data.llm_tagged + ' mit KI</span>';
+          }
+
+          indexInfo.style.display = 'flex';
+        }
+      })
+      .catch(function() {});
+  }
+
+  function triggerIndexing() {
+    indexBtn.disabled = true;
+    indexProgress.style.display = 'flex';
+    indexProgressText.textContent = 'Starte Indexierung...';
+
+    fetch('/search/index?use_llm=true&max_sessions=3', {
+      method: 'POST'
+    })
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+      if (data.status === 'already_running') {
+        indexProgressText.textContent = data.progress;
+      } else {
+        indexProgressText.textContent = 'Indexierung läuft...';
+        pollIndexingStatus();
+      }
+    })
+    .catch(function(e) {
+      indexProgressText.textContent = 'Fehler: ' + e.message;
+      setTimeout(function() {
+        indexProgress.style.display = 'none';
+        indexBtn.disabled = false;
+      }, 3000);
+    });
+  }
+
+  function pollIndexingStatus() {
+    fetch('/search/index/status')
+      .then(function(response) { return response.json(); })
+      .then(function(data) {
+        indexProgressText.textContent = data.progress || 'Läuft...';
+
+        if (data.running) {
+          setTimeout(pollIndexingStatus, 1000);
+        } else {
+          // Done
+          var result = data.last_result || {};
+          if (result.new !== undefined) {
+            indexProgressText.textContent = '✓ ' + result.new + ' neue, ' +
+              result.existing + ' bestehende Einträge';
+          }
+
+          setTimeout(function() {
+            indexProgress.style.display = 'none';
+            indexBtn.disabled = false;
+            loadTags();  // Reload stats and tags
+          }, 2000);
+        }
+      })
+      .catch(function() {
+        setTimeout(pollIndexingStatus, 2000);
+      });
+  }
+
+  function renderTags() {
+    var categoryNames = {
+      'thema': 'Thema',
+      'typ': 'Typ',
+      'bezirk': 'Bezirk'
+    };
+
+    var html = '';
+    var order = ['thema', 'bezirk', 'typ'];
+
+    order.forEach(function(category) {
+      var tags = state.availableTags[category];
+      if (!tags || tags.length === 0) return;
+
+      html += '<div class="tag-category">';
+      html += '<div class="tag-category-title">' + (categoryNames[category] || category) + '</div>';
+      html += '<div class="tag-chips">';
+
+      tags.slice(0, 12).forEach(function(tag) {
+        var isSelected = state.selectedTags.indexOf(tag.name) !== -1;
+        html += '<button class="tag-chip' + (isSelected ? ' selected' : '') + '" data-tag="' + tag.name + '">';
+        html += tag.name + '<span class="count">(' + tag.count + ')</span>';
+        html += '</button>';
+      });
+
+      html += '</div></div>';
+    });
+
+    tagCategoriesEl.innerHTML = html;
+
+    // Add click handlers
+    tagCategoriesEl.querySelectorAll('.tag-chip').forEach(function(chip) {
+      chip.addEventListener('click', function() {
+        toggleTag(chip.dataset.tag);
+      });
+    });
+  }
+
+  function toggleTag(tagName) {
+    var idx = state.selectedTags.indexOf(tagName);
+    if (idx === -1) {
+      state.selectedTags.push(tagName);
+    } else {
+      state.selectedTags.splice(idx, 1);
+    }
+    updateTagUI();
+  }
+
+  function updateTagUI() {
+    tagCategoriesEl.querySelectorAll('.tag-chip').forEach(function(chip) {
+      var isSelected = state.selectedTags.indexOf(chip.dataset.tag) !== -1;
+      if (isSelected) {
+        chip.classList.add('selected');
+      } else {
+        chip.classList.remove('selected');
+      }
+    });
+  }
+
+  function performFastSearch(searchQuery) {
+    var query = searchQuery !== undefined ? searchQuery : inputEl.value.trim();
+
+    welcomeEl.style.display = 'none';
+
+    // Clear previous results
+    var oldResults = messagesEl.querySelector('.fast-results-container');
+    if (oldResults) oldResults.remove();
+
+    var resultsContainer = document.createElement('div');
+    resultsContainer.className = 'fast-results-container';
+    resultsContainer.innerHTML = '<div class="search-stats">Suche...</div>';
+    messagesEl.appendChild(resultsContainer);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+
+    var requestBody = {
+      limit: 30
+    };
+
+    if (query) {
+      requestBody.query = query;
+    }
+
+    if (state.selectedTags.length > 0) {
+      requestBody.tags = state.selectedTags;
+    }
+
+    fetch('/search/fast', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(requestBody)
+    })
+    .then(function(response) {
+      if (!response.ok) throw new Error('Search failed');
+      return response.json();
+    })
+    .then(function(data) {
+      renderFastResults(resultsContainer, data, query);
+    })
+    .catch(function(e) {
+      resultsContainer.innerHTML = '<div class="search-stats" style="color: var(--error);">' +
+        '❌ Fehler: ' + e.message + '</div>';
+    });
+  }
+
+  function renderFastResults(container, data, query) {
+    var html = '<div class="search-stats">';
+    html += '<span class="count">' + data.count + '</span> Ergebnisse';
+    if (query) html += ' für "' + escapeHtml(query) + '"';
+    if (state.selectedTags.length > 0) {
+      html += ' mit Tags: ' + state.selectedTags.join(', ');
+    }
+    html += ' <small>(Schnellsuche)</small></div>';
+
+    if (data.results.length === 0) {
+      html += '<div style="color: var(--text-secondary); padding: 1rem; text-align: center;">';
+      html += 'Keine Ergebnisse gefunden. Versuche andere Tags oder die Vollsuche.';
+      html += '</div>';
+    } else {
+      html += '<div class="fast-results">';
+      data.results.forEach(function(item) {
+        html += '<div class="fast-result-item">';
+        html += '<div class="fast-result-title">';
+        html += '<a href="' + item.url + '" target="_blank" rel="noopener">' + escapeHtml(item.title) + '</a>';
+        html += '</div>';
+        html += '<div class="fast-result-meta">';
+        if (item.vorlage_nr) html += '<span>📄 ' + escapeHtml(item.vorlage_nr) + '</span>';
+        if (item.gremium) html += '<span>🏛️ ' + escapeHtml(item.gremium) + '</span>';
+        if (item.date) html += '<span>📅 ' + escapeHtml(item.date) + '</span>';
+        html += '</div>';
+        if (item.tags && item.tags.length > 0) {
+          html += '<div class="fast-result-tags">';
+          item.tags.forEach(function(tag) {
+            html += '<span class="fast-result-tag">' + escapeHtml(tag) + '</span>';
+          });
+          html += '</div>';
+        }
+        html += '</div>';
+      });
+      html += '</div>';
+    }
+
+    container.innerHTML = html;
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  function clearChat() {
+    state.messages = [];
+    state.selectedTags = [];
+    updateTagUI();
+    while (messagesEl.firstChild) {
+      messagesEl.removeChild(messagesEl.firstChild);
+    }
+    messagesEl.appendChild(welcomeEl);
+    welcomeEl.style.display = 'block';
+  }
+
+  function escapeHtml(text) {
+    var div = document.createElement('div');
+    div.appendChild(document.createTextNode(text));
+    return div.innerHTML;
+  }
+
+  function createTextWithLinks(text) {
+    var container = document.createElement('div');
+    var escaped = escapeHtml(text);
+    
+    var linkRegex = /\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g;
+    var parts = [];
+    var lastIndex = 0;
+    var match;
+    
+    while ((match = linkRegex.exec(escaped)) !== null) {
+      if (match.index > lastIndex) {
+        parts.push({ type: 'text', content: escaped.substring(lastIndex, match.index) });
+      }
+      parts.push({ type: 'link', text: match[1], url: match[2] });
+      lastIndex = match.index + match[0].length;
+    }
+    if (lastIndex < escaped.length) {
+      parts.push({ type: 'text', content: escaped.substring(lastIndex) });
+    }
+    
+    parts.forEach(function(part) {
+      if (part.type === 'link') {
+        var a = document.createElement('a');
+        a.href = part.url;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        a.textContent = part.text;
+        container.appendChild(a);
+      } else {
+        var processed = part.content
+          .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+          .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+          .replace(/`([^`]+)`/g, '<code>$1</code>')
+          .replace(/\n/g, '<br>');
+        var span = document.createElement('span');
+        span.innerHTML = processed;
+        container.appendChild(span);
+      }
+    });
+    
+    return container;
+  }
+
+  function addMessage(role, content, toolCalls, sources) {
+    toolCalls = toolCalls || [];
+    sources = sources || [];
+
+    welcomeEl.style.display = 'none';
+
+    var msgEl = document.createElement('div');
+    msgEl.className = 'message ' + role;
+
+    var avatarEl = document.createElement('div');
+    avatarEl.className = 'message-avatar';
+    avatarEl.textContent = role === 'user' ? '\u{1F464}' : '\u{1F916}';
+
+    var contentEl = document.createElement('div');
+    contentEl.className = 'message-content';
+
+    if (toolCalls.length > 0) {
+      var badgesDiv = document.createElement('div');
+      toolCalls.forEach(function(t) {
+        var badge = document.createElement('span');
+        badge.className = 'tool-badge';
+        badge.textContent = t;
+        badgesDiv.appendChild(badge);
+      });
+      contentEl.appendChild(badgesDiv);
+    }
+
+    var textEl = createTextWithLinks(content);
+    contentEl.appendChild(textEl);
+
+    if (sources.length > 0) {
+      var sourcesEl = document.createElement('div');
+      sourcesEl.className = 'sources';
+
+      var titleDiv = document.createElement('div');
+      titleDiv.className = 'sources-title';
+      titleDiv.textContent = 'Quellen / Sources:';
+      sourcesEl.appendChild(titleDiv);
+
+      sources.forEach(function(s) {
+        var link = document.createElement('a');
+        link.href = s.url;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.textContent = s.title;
+        sourcesEl.appendChild(link);
+      });
+      contentEl.appendChild(sourcesEl);
+    }
+
+    msgEl.appendChild(avatarEl);
+    msgEl.appendChild(contentEl);
+    messagesEl.appendChild(msgEl);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+
+    return msgEl;
+  }
+
+  function addTypingIndicator() {
+    var el = document.createElement('div');
+    el.className = 'message assistant';
+    el.id = 'typing';
+
+    var avatar = document.createElement('div');
+    avatar.className = 'message-avatar';
+    avatar.textContent = '\u{1F916}';
+
+    var content = document.createElement('div');
+    content.className = 'message-content';
+
+    var typing = document.createElement('div');
+    typing.className = 'typing';
+    for (var i = 0; i < 3; i++) {
+      typing.appendChild(document.createElement('span'));
+    }
+    content.appendChild(typing);
+
+    el.appendChild(avatar);
+    el.appendChild(content);
+    messagesEl.appendChild(el);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  function removeTypingIndicator() {
+    var el = document.getElementById('typing');
+    if (el) el.parentNode.removeChild(el);
+  }
+
+  function sendMessage() {
+    var message = inputEl.value.trim();
+
+    // Fast search mode
+    if (state.searchMode === 'fast') {
+      if (!message && state.selectedTags.length === 0) {
+        // Show hint
+        inputEl.placeholder = 'Gib einen Suchbegriff ein oder wähle Tags...';
+        return;
+      }
+      performFastSearch(message);
+      inputEl.value = '';
+      return;
+    }
+
+    // Full search mode (LLM chat)
+    if (!message) return;
+
+    var provider = state.settings.provider;
+
+    // Check for API key if not Ollama
+    if (provider !== 'ollama' && !state.settings.apiKey) {
+      settingsModal.classList.add('active');
+      return;
+    }
+
+    addMessage('user', message);
+    state.messages.push({ role: 'user', content: message });
+
+    inputEl.value = '';
+    autoResize();
+
+    addTypingIndicator();
+    sendBtn.disabled = true;
+
+    var requestBody = {
+      message: message,
+      history: state.messages.slice(0, -1),
+      provider: state.settings.provider,
+      model: state.settings.model
+    };
+
+    // Only include API key if not Ollama
+    if (provider !== 'ollama') {
+      requestBody.api_key = state.settings.apiKey;
+    }
+
+    if (state.settings.baseUrl) {
+      requestBody.base_url = state.settings.baseUrl;
+    }
+
+    fetch('/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(requestBody)
+    })
+    .then(function(response) {
+      removeTypingIndicator();
+      if (!response.ok) {
+        return response.json().then(function(err) {
+          throw new Error(err.detail || 'Request failed');
+        });
+      }
+      return response.json();
+    })
+    .then(function(data) {
+      addMessage('assistant', data.response, data.tool_calls, data.sources);
+      state.messages.push({ role: 'assistant', content: data.response });
+    })
+    .catch(function(e) {
+      removeTypingIndicator();
+      var errorMsg = 'Error: ' + e.message;
+      if (provider === 'ollama' && e.message.includes('Connection')) {
+        errorMsg += '\n\nMake sure Ollama is running: ollama serve';
+      }
+      addMessage('assistant', errorMsg);
+    })
+    .finally(function() {
+      sendBtn.disabled = false;
+      inputEl.focus();
+    });
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>
