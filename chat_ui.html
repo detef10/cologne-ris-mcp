@@ -865,6 +865,17 @@ body {
         <code>ollama pull llama3.2</code>
       </div>
     </div>
+    <div class="form-group">
+      <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+        <input type="checkbox" id="pdf-parsing" style="width: auto;">
+        <span>PDF-Dokumente analysieren</span>
+      </label>
+      <div class="hint" style="margin-top: 0.5rem; padding: 0.75rem; background: rgba(251, 191, 36, 0.1); border: 1px solid var(--warning); border-radius: 6px;">
+        <strong style="color: var(--warning);">Hinweis:</strong> PDF-Parsing ist langsamer (5-30 Sek. pro Dokument),
+        verbraucht mehr Speicher und kann bei vielen Anlagen 1-2 Minuten dauern.
+        Aktivieren Sie diese Option nur, wenn Sie den vollständigen Inhalt der Dokumente benötigen.
+      </div>
+    </div>
     <div id="test-result"></div>
     <div class="modal-actions">
       <button class="modal-btn secondary" id="test-btn">Test Connection</button>
@@ -883,7 +894,8 @@ body {
       provider: 'ollama',
       model: 'qwen2.5:7b',
       apiKey: '',
-      baseUrl: ''
+      baseUrl: '',
+      pdfParsing: false
     },
     ollamaModels: [],
     searchMode: 'fast', // 'fast' or 'full'
@@ -1019,6 +1031,7 @@ body {
 
   function loadSettings() {
     var saved = localStorage.getItem('cologne-ris-chat-settings');
+    var pdfCheckbox = document.getElementById('pdf-parsing');
     if (saved) {
       try {
         var parsed = JSON.parse(saved);
@@ -1026,18 +1039,22 @@ body {
         state.settings.model = parsed.model || 'qwen2.5:7b';
         state.settings.apiKey = parsed.apiKey || '';
         state.settings.baseUrl = parsed.baseUrl || '';
+        state.settings.pdfParsing = parsed.pdfParsing || false;
       } catch (e) {}
       providerSelect.value = state.settings.provider;
       apiKeyInput.value = state.settings.apiKey;
       baseUrlInput.value = state.settings.baseUrl;
+      pdfCheckbox.checked = state.settings.pdfParsing;
     }
   }
 
   function saveSettings() {
+    var pdfCheckbox = document.getElementById('pdf-parsing');
     state.settings.provider = providerSelect.value;
     state.settings.model = modelSelect.value;
     state.settings.apiKey = apiKeyInput.value;
     state.settings.baseUrl = baseUrlInput.value;
+    state.settings.pdfParsing = pdfCheckbox.checked;
     localStorage.setItem('cologne-ris-chat-settings', JSON.stringify(state.settings));
     settingsModal.classList.remove('active');
     testResult.textContent = '';

@@ -2,11 +2,19 @@ import httpx
 import json
 import re
 import time
+import io
 from typing import Optional, List
 from fastapi import FastAPI, Query
 from fastapi.responses import HTMLResponse
 from fastapi_mcp import FastApiMCP
 from bs4 import BeautifulSoup
+
+# PDF parsing (optional - graceful fallback if not installed)
+try:
+    import fitz  # PyMuPDF
+    PDF_SUPPORT = True
+except ImportError:
+    PDF_SUPPORT = False
 
 # --- Configuration ---
 BASE_URL = "https://ratsinformation.stadt-koeln.de"
@@ -69,6 +77,53 @@ def _html_get(path: str) -> BeautifulSoup:
     r = client.get(f"{BASE_URL}/{path}", headers={"Accept": "text/html"})
     r.raise_for_status()
     return BeautifulSoup(r.text, "html.parser")
+
+
+def _pdf_extract_text(url: str, max_pages: int = 50) -> dict:
+    """Download a PDF and extract its text content.
+
+    Args:
+        url: Full URL to the PDF file
+        max_pages: Maximum number of pages to extract (default 50)
+
+    Returns:
+        dict with 'text', 'page_count', 'truncated' keys
+    """
+    if not PDF_SUPPORT:
+        return {"error": "PDF support not available. Install pymupdf: pip install pymupdf"}
+
+    try:
+        # Download PDF
+        r = client.get(url, headers={"Accept": "application/pdf"}, timeout=60)
+        r.raise_for_status()
+
+        # Parse PDF from bytes
+        pdf_bytes = io.BytesIO(r.content)
+        doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+
+        total_pages = len(doc)
+        pages_to_extract = min(total_pages, max_pages)
+        truncated = total_pages > max_pages
+
+        # Extract text from each page
+        text_parts = []
+        for page_num in range(pages_to_extract):
+            page = doc[page_num]
+            text = page.get_text()
+            if text.strip():
+                text_parts.append(f"--- Seite {page_num + 1} ---\n{text}")
+
+        doc.close()
+
+        return {
+            "text": "\n\n".join(text_parts),
+            "page_count": total_pages,
+            "pages_extracted": pages_to_extract,
+            "truncated": truncated,
+            "char_count": sum(len(t) for t in text_parts)
+        }
+    except Exception as e:
+        return {"error": str(e), "url": url}
 
 
 # ============================================================
@@ -262,6 +317,86 @@ def scrape_vorlage(kvonr: int):
         }
     except Exception as e:
         return {"error": str(e), "kvonr": kvonr}
+
+
+# ============================================================
+# TOOL 8b: PDF Content Extraction
+# ============================================================
+@app.get("/scrape/pdf", tags=["HTML Scraper"], summary="Extract text from PDF document",
+         description="Downloads a PDF document from the RIS and extracts its text content. "
+                     "WARNING: This can be slow (5-30 seconds) and memory-intensive for large documents.")
+def extract_pdf_content(
+    url: str = Query(..., description="Full URL to the PDF document"),
+    max_pages: int = Query(50, ge=1, le=200, description="Maximum pages to extract (default 50)")
+):
+    """Extract text content from a PDF document.
+
+    This tool downloads and parses PDF documents from the RIS.
+    Use it to get the full content of attachments, protocols, or other documents.
+
+    Note: Processing can take 5-30 seconds depending on document size.
+    """
+    if not PDF_SUPPORT:
+        return {
+            "error": "PDF support not installed",
+            "message": "Install pymupdf: pip install pymupdf",
+            "url": url
+        }
+
+    # Validate URL is from the RIS
+    if not url.startswith(BASE_URL) and "stadt-koeln.de" not in url:
+        return {
+            "error": "Invalid URL",
+            "message": "Only URLs from ratsinformation.stadt-koeln.de are allowed",
+            "url": url
+        }
+
+    result = _pdf_extract_text(url, max_pages)
+    result["source_url"] = url
+    return result
+
+
+@app.get("/scrape/vorlage/{kvonr}/with-pdfs", tags=["HTML Scraper"],
+         summary="Get Vorlage with PDF contents",
+         description="Scrapes a Vorlage and also extracts text from all attached PDFs. "
+                     "WARNING: This can be very slow (30-120 seconds) for Vorlagen with many attachments.")
+def scrape_vorlage_with_pdfs(
+    kvonr: int,
+    max_pages_per_pdf: int = Query(20, ge=1, le=100, description="Max pages per PDF (default 20)")
+):
+    """Get a Vorlage with full PDF content extracted.
+
+    This combines the regular Vorlage scraper with PDF extraction for all attachments.
+    Use this when you need the complete content including all documents.
+
+    Warning: Can take 30-120 seconds for Vorlagen with many attachments.
+    """
+    # First get the regular vorlage data
+    vorlage = scrape_vorlage(kvonr)
+
+    if "error" in vorlage:
+        return vorlage
+
+    if not PDF_SUPPORT:
+        vorlage["pdf_warning"] = "PDF support not installed. Install pymupdf: pip install pymupdf"
+        return vorlage
+
+    # Extract text from each PDF attachment
+    pdf_contents = []
+    for attachment in vorlage.get("attachments", []):
+        url = attachment.get("url", "")
+        if url and (".pdf" in url.lower() or "getfile" in url.lower()):
+            pdf_result = _pdf_extract_text(url, max_pages_per_pdf)
+            pdf_contents.append({
+                "name": attachment.get("name", "Unknown"),
+                "url": url,
+                **pdf_result
+            })
+            time.sleep(0.5)  # Rate limiting
+
+    vorlage["pdf_contents"] = pdf_contents
+    vorlage["pdf_count"] = len(pdf_contents)
+    return vorlage
 
 
 # ============================================================

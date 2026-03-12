@@ -64,8 +64,24 @@ Open http://localhost:8767 for the chat UI.
 | Tool | Endpoint | Description |
 |------|----------|-------------|
 | Vorlage Detail | `GET /scrape/vorlage/{kvonr}` | Scrape a specific proposal by ID |
+| Vorlage with PDFs | `GET /scrape/vorlage/{kvonr}/with-pdfs` | Vorlage + extracted PDF text |
+| PDF Content | `GET /scrape/pdf?url=` | Extract text from a PDF document |
 | Session Calendar | `GET /scrape/sessions?year=&month=` | Monthly session overview |
 | Search Vorlagen | `GET /scrape/search?query=&page=` | Keyword search for proposals |
+
+### PDF Parsing
+
+The server can extract text from PDF documents (attachments, protocols, etc.):
+
+```bash
+# Extract text from a single PDF
+curl "http://localhost:8766/scrape/pdf?url=https://ratsinformation.stadt-koeln.de/getfile.asp?..."
+
+# Get a Vorlage with all PDF contents extracted
+curl "http://localhost:8766/scrape/vorlage/12345/with-pdfs"
+```
+
+**Warning:** PDF parsing is slower (5-30 seconds per document) and memory-intensive. Enable only when needed.
 
 ## Connecting an MCP Client
 
