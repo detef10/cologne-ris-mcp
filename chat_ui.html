@@ -870,10 +870,22 @@ body {
         <input type="checkbox" id="pdf-parsing" style="width: auto;">
         <span>PDF-Dokumente analysieren</span>
       </label>
-      <div class="hint" style="margin-top: 0.5rem; padding: 0.75rem; background: rgba(251, 191, 36, 0.1); border: 1px solid var(--warning); border-radius: 6px;">
-        <strong style="color: var(--warning);">Hinweis:</strong> PDF-Parsing ist langsamer (5-30 Sek. pro Dokument),
-        verbraucht mehr Speicher und kann bei vielen Anlagen 1-2 Minuten dauern.
-        Aktivieren Sie diese Option nur, wenn Sie den vollständigen Inhalt der Dokumente benötigen.
+      <div class="hint" style="margin-top: 0.5rem; padding: 0.75rem; background: rgba(74, 222, 128, 0.1); border: 1px solid var(--success); border-radius: 6px;">
+        <strong style="color: var(--success);">Empfohlen!</strong> PDFs enthalten die relevanten Inhalte:<br>
+        <ul style="margin: 0.5rem 0 0 1rem; font-size: 0.85rem;">
+          <li>Vollständige Begründungen und Beschlusstexte</li>
+          <li>Fachliche Details, Gutachten, Analysen</li>
+          <li>Anlagen mit Karten, Plänen, Stellungnahmen</li>
+        </ul>
+      </div>
+      <div class="hint" style="margin-top: 0.5rem; padding: 0.75rem; background: rgba(251, 191, 36, 0.1); border: 1px solid var(--warning); border-radius: 6px; font-size: 0.85rem;">
+        <strong style="color: var(--warning);">Beachten:</strong> PDF-Parsing dauert 5-30 Sek. pro Dokument.
+        Bei vielen Anlagen kann es 1-2 Minuten dauern.
+      </div>
+      <div class="hint" style="margin-top: 0.5rem; padding: 0.75rem; background: var(--bg-tertiary); border-radius: 6px; font-size: 0.8rem;">
+        <strong>HTML vs. PDF:</strong><br>
+        <em>HTML:</em> Nur Metadaten (Betreff, Vorlage-Nr., Gremien) - gut für Übersicht<br>
+        <em>PDF:</em> Vollständiger Inhalt inkl. Begründung - notwendig für Analyse
       </div>
     </div>
     <div id="test-result"></div>

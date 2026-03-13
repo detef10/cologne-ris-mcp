@@ -83,6 +83,19 @@ curl "http://localhost:8766/scrape/vorlage/12345/with-pdfs"
 
 **Warning:** PDF parsing is slower (5-30 seconds per document) and memory-intensive. Enable only when needed.
 
+### HTML vs. PDF Content Comparison
+
+The RIS system stores information in two places with very different content:
+
+| Source | Content | Size | Use Case |
+|--------|---------|------|----------|
+| **HTML Pages** | Metadata only (title, date, committee, status) | ~200 characters | Quick overview, filtering |
+| **PDF Documents** | Full content (Begründungen, analyses, attachments) | ~10,000+ characters | Detailed analysis, research |
+
+**Recommendation:** Enable PDF parsing for meaningful queries. HTML pages contain almost no substantive information—all the actual content (reasoning, expert opinions, maps, plans) is in the PDFs.
+
+**Important:** Decision outcomes (beschlossen/abgelehnt/vertagt) are **not** contained in Vorlage PDFs. These are recorded in separate **Beschlussprotokolle** (decision protocols) from the committee meetings. To find out if a proposal was approved, you need to look at the meeting minutes, not the proposal documents.
+
 ## Connecting an MCP Client
 
 ### Claude Desktop / Cursor / VS Code
